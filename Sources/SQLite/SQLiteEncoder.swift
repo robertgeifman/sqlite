@@ -14,7 +14,7 @@ public final class SQLiteEncoder {
         _database = database
     }
 
-    public func encode<T: Encodable>(_ value: T, using sql: SQL) throws {
+    public func encode<T: Encodable>(_ value: T, using sql: SQL, arguments: SQLiteArguments = [:]) throws {
         let encoder = _SQLiteEncoder()
 
         if let array = value as? Array<Encodable> {
@@ -22,7 +22,11 @@ public final class SQLiteEncoder {
                 try _database.inTransaction {
                     try array.forEach { (element: Encodable) in
                         try element.encode(to: encoder)
-                        try _database.write(sql, arguments: encoder.encodedArguments)
+						var elementArguments = encoder.encodedArguments
+						for (key, value) in arguments {
+							elementArguments[key] = value
+						}
+                        try _database.write(sql, arguments: elementArguments)
                     }
                 }
             } catch {
@@ -32,7 +36,11 @@ public final class SQLiteEncoder {
             throw SQLiteEncoder.Error.invalidType(dictionary)
         } else {
             try value.encode(to: encoder)
-            try _database.write(sql, arguments: encoder.encodedArguments)
+			var elementArguments = encoder.encodedArguments
+			for (key, value) in arguments {
+				elementArguments[key] = value
+			}
+            try _database.write(sql, arguments: elementArguments)
         }
     }
 }
@@ -41,7 +49,7 @@ private class _SQLiteEncoder: Swift.Encoder {
     var codingPath: Array<CodingKey> = []
     var userInfo: [CodingUserInfoKey : Any] = [:]
 
-    var encodedArguments: SQLiteArguments { return _storage.arguments }
+    var encodedArguments: SQLiteArguments { _storage.arguments }
 
     private let _storage = _KeyedStorage()
 
@@ -185,19 +193,15 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 private class _KeyedStorage {
     private var _elements = SQLiteArguments()
 
-    var arguments: SQLiteArguments { return _elements }
+    var arguments: SQLiteArguments { _elements }
 
     func reset() {
         _elements.removeAll(keepingCapacity: true)
     }
 
     subscript(key: String) -> SQLiteValue? {
-        get {
-            return _elements[key]
-        }
-        set {
-            _elements[key] = newValue
-        }
+        get { _elements[key] }
+        set { _elements[key] = newValue }
     }
 }
 
