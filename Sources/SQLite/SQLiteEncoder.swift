@@ -16,7 +16,6 @@ public final class SQLiteEncoder {
 
     public func encode<T: Encodable>(_ value: T, using sql: SQL, arguments: SQLiteArguments = [:]) throws {
         let encoder = _SQLiteEncoder()
-
         if let array = value as? Array<Encodable> {
             do {
                 try _database.inTransaction {
