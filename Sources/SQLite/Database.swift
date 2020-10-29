@@ -82,13 +82,17 @@ public final class Database {
 	public func write(_ sql: SQL, arguments: SQLiteArguments) throws {
 		try sync {
 			guard _isOpen else { assertionFailure("Database is closed"); return }
-
+			do {
 			let statement = try cachedStatement(for: sql)
 			defer { statement.resetAndClearBindings() }
 
 			let result = try _execute(sql, statement: statement, arguments: arguments)
 			if result.isEmpty == false {
 				throw SQLiteError.onWrite(result)
+			}
+			} catch {
+				print(error)
+				throw error
 			}
 		}
 	}
@@ -323,14 +327,18 @@ extension Database {
 		assert(isOnDatabaseQueue)
 		guard _isOpen else { assertionFailure("Database is closed"); return [] }
 
+		do {
 		try statement.bind(arguments: arguments)
 		let (result, output) = try statement.evaluate()
-
 		if result != SQLITE_DONE, result != SQLITE_INTERRUPT {
 			throw SQLiteError.onStep(result, sql)
 		}
-
 		return output
+		} catch {
+			print(error)
+			throw error
+		}
+
 	}
 
 	private func cachedStatement(for sql: SQL) throws -> OpaquePointer {
