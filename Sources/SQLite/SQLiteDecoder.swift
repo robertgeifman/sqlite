@@ -232,7 +232,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		} else if Double.self == T.self {
 			return try decode(Double.self, forKey: key) as! T
 		} else if Bool.self == T.self {
-			return try decode(Int.self, forKey: key) as! T
+			return try decode(Bool.self, forKey: key) as! T
 		} else if UUID.self == T.self {
 			return try decode(UUID.self, forKey: key) as! T
 		} else {
