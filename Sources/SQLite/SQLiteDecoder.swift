@@ -16,6 +16,7 @@ public final class SQLiteDecoder {
 		self._database = database
 	}
 
+	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
 		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
 		guard results.isEmpty || results.count == 1 else {
