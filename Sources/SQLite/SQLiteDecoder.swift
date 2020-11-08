@@ -17,19 +17,34 @@ public final class SQLiteDecoder {
 	}
 
 	@_disfavoredOverload
-	public func decode<T: Decodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
+	public func decode<T: Decodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
+		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
+		guard results.count == 1 else {
+			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
+		}
+
+		//let result = results.first
+		let result = results[0]
+		return result
+	}
+
+	public func decodeIfPresent<T: Decodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
 		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
 		guard results.isEmpty || results.count == 1 else {
 			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
 		}
-		return results.first
+		if results.isEmpty { return nil }
+		//let result = results.first
+		let result = results[0]
+		return result
 	}
 
 	public func decode<T: Decodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
 		let results = try _database.read(sql, arguments: arguments)
 		return try results.map { [decoder = _SQLiteDecoder()] in
 			decoder.row = $0
-			return try T(from: decoder)
+			let result = try T(from: decoder)
+			return result
 		}
 	}
 }
