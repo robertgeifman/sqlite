@@ -1,7 +1,34 @@
 import Foundation
 
+public extension SQLiteDecoder.Error {
+	var failureReason: String? {
+		switch self {
+		case .incorrectNumberOfResults: return "Incorrect number of results"
+		case .missingValueForKey: return "Missing value for key"
+		case .invalidDate: return "Invalid Date"
+		case .invalidURL: return "Invalid URL"
+		case .invalidUUID: return "Invalid UUID"
+		case .invalidJSON: return "Invalid JSON"
+		}
+	}
+
+	var recoverySuggestion: String? {
+		switch self {
+		case let .incorrectNumberOfResults(number): return "\(number)"
+		case let .missingValueForKey(string): return "`\(string)`"
+		case let .invalidDate(string): return "`\(string)`"
+		case let .invalidURL(string): return "`\(string)`"
+		case let .invalidUUID(string): return "`\(string)`"
+		case let .invalidJSON(string): return "`\(string)`"
+		}
+	}
+	var errorDescription: String? {
+		NSLocalizedString("SQLite Decoder error", comment: "")
+	}
+}
+
 public final class SQLiteDecoder {
-	public enum Error: Swift.Error {
+	public enum Error: LocalizedError {
 		case incorrectNumberOfResults(Int)
 		case missingValueForKey(String)
 		case invalidDate(String)

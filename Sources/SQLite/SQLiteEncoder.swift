@@ -1,7 +1,30 @@
 import Foundation
 
+public extension SQLiteEncoder.Error {
+	var failureReason: String? {
+		switch self {
+		case .invalidType: return "Invalid type"
+		case .invalidValue: return "Invalid value"
+		case .invalidJSON: return "Invalid JSON"
+		case .transactionFailed: return "Transaction failed"
+		}
+	}
+
+	var recoverySuggestion: String? {
+		switch self {
+		case let .invalidType(value): return "`\(type(of: value))`"
+		case let .invalidValue(value): return "`\(value)`"
+		case .invalidJSON: return nil
+		case .transactionFailed: return nil
+		}
+	}
+	var errorDescription: String? {
+		NSLocalizedString("SQLite Encoder error", comment: "")
+	}
+}
+
 public final class SQLiteEncoder {
-    public enum Error: Swift.Error {
+    public enum Error: LocalizedError {
         case invalidType(Any)
         case invalidValue(Any)
         case invalidJSON(Data)
