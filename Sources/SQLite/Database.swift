@@ -83,13 +83,13 @@ public final class Database {
 		try sync {
 			guard _isOpen else { assertionFailure("Database is closed"); return }
 			do {
-			let statement = try cachedStatement(for: sql)
-			defer { statement.resetAndClearBindings() }
+				let statement = try cachedStatement(for: sql)
+				defer { statement.resetAndClearBindings() }
 
-			let result = try _execute(sql, statement: statement, arguments: arguments)
-			if result.isEmpty == false {
-				throw SQLiteError.onWrite(result)
-			}
+				let result = try _execute(sql, statement: statement, arguments: arguments)
+				if result.isEmpty == false {
+					throw SQLiteError.onWrite(result)
+				}
 			} catch {
 				print(error)
 				throw error

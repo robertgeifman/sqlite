@@ -1,42 +1,6 @@
 import Foundation
 
-public extension SQLiteDecoder.Error {
-	var failureReason: String? {
-		switch self {
-		case .incorrectNumberOfResults: return "Incorrect number of results"
-		case .missingValueForKey: return "Missing value for key"
-		case .invalidDate: return "Invalid Date"
-		case .invalidURL: return "Invalid URL"
-		case .invalidUUID: return "Invalid UUID"
-		case .invalidJSON: return "Invalid JSON"
-		}
-	}
-
-	var recoverySuggestion: String? {
-		switch self {
-		case let .incorrectNumberOfResults(number): return "\(number)"
-		case let .missingValueForKey(string): return "`\(string)`"
-		case let .invalidDate(string): return "`\(string)`"
-		case let .invalidURL(string): return "`\(string)`"
-		case let .invalidUUID(string): return "`\(string)`"
-		case let .invalidJSON(string): return "`\(string)`"
-		}
-	}
-	var errorDescription: String? {
-		NSLocalizedString("SQLite Decoder error", comment: "")
-	}
-}
-
 public final class SQLiteDecoder {
-	public enum Error: LocalizedError {
-		case incorrectNumberOfResults(Int)
-		case missingValueForKey(String)
-		case invalidDate(String)
-		case invalidURL(String)
-		case invalidUUID(String)
-		case invalidJSON(String)
-	}
-
 	private let _database: Database
 
 	public init(_ database: Database) {
@@ -45,7 +9,13 @@ public final class SQLiteDecoder {
 
 	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
-		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
+		var results: [T]
+		do {
+			results = try decode([T].self, using: sql, arguments: arguments)
+		} catch {
+			print(error)
+			throw error
+		}
 		guard results.count == 1 else {
 			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
 		}
@@ -60,6 +30,7 @@ public final class SQLiteDecoder {
 		guard results.isEmpty || results.count == 1 else {
 			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
 		}
+		
 		if results.isEmpty { return nil }
 		//let result = results.first
 		let result = results[0]
@@ -68,7 +39,7 @@ public final class SQLiteDecoder {
 
 	public func decode<T: Decodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
 		let results = try _database.read(sql, arguments: arguments)
-		return try results.map { [decoder = _SQLiteDecoder()] in
+		return try results.map { [decoder = _SQLiteDecoder(database: _database)] in
 			decoder.row = $0
 			let result = try T(from: decoder)
 			return result
@@ -77,18 +48,19 @@ public final class SQLiteDecoder {
 }
 
 private class _SQLiteDecoder: Swift.Decoder {
+	let _database: Database
+	var row: SQLiteRow?
 	var codingPath: [CodingKey] = []
 	var userInfo: [CodingUserInfoKey: Any] = [:]
 
-	var row: SQLiteRow?
-
-	init(_ row: SQLiteRow? = nil) {
+	init(database: Database, row: SQLiteRow? = nil) {
+		_database = database
 		self.row = row
 	}
 
 	func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key: CodingKey {
 		guard let row = self.row else { fatalError() }
-		return KeyedDecodingContainer(_KeyedContainer<Key>(row))
+		return KeyedDecodingContainer(_KeyedContainer<Key>(database: _database, row: row))
 	}
 
 	func unkeyedContainer() throws -> UnkeyedDecodingContainer {
@@ -103,12 +75,14 @@ private class _SQLiteDecoder: Swift.Decoder {
 private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	typealias Key = K
 
+	let _database: Database
+	var _row: SQLiteRow
 	let codingPath: [CodingKey] = []
 	var allKeys: [K] { return _row.keys.compactMap { K(stringValue: $0) } }
 
-	private var _row: SQLiteRow
 
-	init(_ row: SQLiteRow) {
+	init(database: Database, row: SQLiteRow) {
+		self._database = database
 		self._row = row
 	}
 
@@ -117,6 +91,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decodeNil(forKey key: K) throws -> Bool {
+		print("SQLiteDecoder.decode Nil for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue] else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -129,6 +104,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Bool.Type, forKey key: K) throws -> Bool {
+		print("SQLiteDecoder.decode Bool for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.boolValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -136,6 +112,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Int.Type, forKey key: K) throws -> Int {
+		print("SQLiteDecoder.decode Int for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.intValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -143,6 +120,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Int8.Type, forKey key: K) throws -> Int8 {
+		print("SQLiteDecoder.decode Int8 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -150,6 +128,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Int16.Type, forKey key: K) throws -> Int16 {
+		print("SQLiteDecoder.decode Int16 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -157,6 +136,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Int32.Type, forKey key: K) throws -> Int32 {
+		print("SQLiteDecoder.decode Int32 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -164,6 +144,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Int64.Type, forKey key: K) throws -> Int64 {
+		print("SQLiteDecoder.decode Int64 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -171,6 +152,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UInt.Type, forKey key: K) throws -> UInt {
+		print("SQLiteDecoder.decode UInt for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -178,6 +160,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UInt8.Type, forKey key: K) throws -> UInt8 {
+		print("SQLiteDecoder.decode UInt8 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -185,6 +168,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UInt16.Type, forKey key: K) throws -> UInt16 {
+		print("SQLiteDecoder.decode UInt16 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -192,6 +176,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UInt32.Type, forKey key: K) throws -> UInt32 {
+		print("SQLiteDecoder.decode UInt32 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -199,6 +184,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UInt64.Type, forKey key: K) throws -> UInt64 {
+		print("SQLiteDecoder.decode UInt64 for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.int64Value else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -206,6 +192,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Float.Type, forKey key: K) throws -> Float {
+		print("SQLiteDecoder.decode FLoat for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.doubleValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -213,6 +200,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Double.Type, forKey key: K) throws -> Double {
+		print("SQLiteDecoder.decode Double for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.doubleValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -220,6 +208,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: String.Type, forKey key: K) throws -> String {
+		print("SQLiteDecoder.decode String for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.stringValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -227,6 +216,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Data.Type, forKey key: K) throws -> Data {
+		print("SQLiteDecoder.decode Data for key: \(K.self) - \(key)")
 		guard let value = _row[key.stringValue]?.dataValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
@@ -234,6 +224,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: Date.Type, forKey key: K) throws -> Date {
+		print("SQLiteDecoder.decode Date for key: \(K.self) - \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let date = PreciseDateFormatter.date(from: string) {
 			return date
@@ -243,6 +234,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: URL.Type, forKey key: K) throws -> URL {
+		print("SQLiteDecoder.decode URL for key: \(K.self) - \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let url = URL(string: string) {
 			return url
@@ -252,6 +244,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	}
 
 	func decode(_ type: UUID.Type, forKey key: K) throws -> UUID {
+		print("SQLiteDecoder.decode UUID for key: \(K.self) - \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let uuid = UUID(uuidString: string) {
 			return uuid
@@ -260,7 +253,8 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		}
 	}
 
-	func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T: Decodable {
+	func decode<T>(_ type: T.Type, forKey key: K) throws -> T
+		where T: Decodable {
 		if Data.self == T.self {
 			return try decode(Data.self, forKey: key) as! T
 		} else if Date.self == T.self {
@@ -278,14 +272,26 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		} else if UUID.self == T.self {
 			return try decode(UUID.self, forKey: key) as! T
 		} else {
-			let jsonText = try decode(String.self, forKey: key)
-			guard let jsonData = jsonText.data(using: .utf8) else {
-				throw SQLiteDecoder.Error.invalidJSON(jsonText)
+			print("SQLiteDecoder.decode \(T.self) for key: \(K.self) - \(key)")
+			let stringValue = try decode(String.self, forKey: key)
+			
+			if nil != UUID(uuidString: stringValue)  {
+				print("\tdecoding as SQLiteSerializable")
+				let decoder = SQLiteDecoder(_database)
+				let fetch = "SELECT * FROM :table WHERE uuid=:id;"
+				return try decoder.decode(T.self, using: fetch.replacingOccurrences(of: ":table", with: "\(T.self)"),
+					arguments: ["id": .text(stringValue)])
 			}
+
+			guard let jsonData = stringValue.data(using: .utf8) else {
+				throw SQLiteDecoder.Error.invalidJSON(stringValue)
+			}
+			print("\tdecoding as JSON")
 			do {
 				let result = try jsonDecoder.decode(T.self, from: jsonData)
 				return result
 			} catch {
+				print("error in \(#function), key: \(key), expectedType: \(T.self)")
 				print(error)
 				throw error
 			}
@@ -322,3 +328,40 @@ private let jsonDecoder: JSONDecoder = {
 	}
 	return decoder
 }()
+
+public extension SQLiteDecoder {
+	enum Error: LocalizedError {
+		case incorrectNumberOfResults(Int)
+		case missingValueForKey(String)
+		case invalidDate(String)
+		case invalidURL(String)
+		case invalidUUID(String)
+		case invalidJSON(String)
+	}
+}
+public extension SQLiteDecoder.Error {
+	var failureReason: String? {
+		switch self {
+		case .incorrectNumberOfResults: return "Incorrect number of results"
+		case .missingValueForKey: return "Missing value for key"
+		case .invalidDate: return "Invalid Date"
+		case .invalidURL: return "Invalid URL"
+		case .invalidUUID: return "Invalid UUID"
+		case .invalidJSON: return "Invalid JSON"
+		}
+	}
+
+	var recoverySuggestion: String? {
+		switch self {
+		case let .incorrectNumberOfResults(number): return "\(number)"
+		case let .missingValueForKey(string): return "`\(string)`"
+		case let .invalidDate(string): return "`\(string)`"
+		case let .invalidURL(string): return "`\(string)`"
+		case let .invalidUUID(string): return "`\(string)`"
+		case let .invalidJSON(string): return "`\(string)`"
+		}
+	}
+	var errorDescription: String? {
+		NSLocalizedString("SQLite Decoder error", comment: "")
+	}
+}
