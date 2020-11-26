@@ -113,9 +113,9 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 			if nil != UUID(uuidString: stringValue)  {
 //				print("\tdecoding as SQLiteSerializable")
 				let decoder = SQLiteDecoder(_database)
-				let fetch = "SELECT * FROM \":table\" WHERE uuid=:id;"
+				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
 				let recordType = "\(T.self)".lowercased()
-				return try decoder.decode(T.self, using: fetch.replacingOccurrences(of: ":table", with: recordType),
+				return try decoder.decode(T.self, using: sql.replacingOccurrences(of: ":table", with: recordType),
 					arguments: ["id": .text(stringValue)])
 			}
 

@@ -63,15 +63,16 @@ public final class Database {
 		}
 	}
 
-	public func inTransaction(_ block: () throws -> Void) throws {
+    public func inTransaction<T>(_ block: (Database) throws -> T) rethrows -> T {
 		try sync {
 			_transactionCount += 1
 			defer { _transactionCount -= 1 }
 
 			do {
 				try execute(raw: "SAVEPOINT database_transaction;")
-				try block()
+                let result = try block(self)
 				try execute(raw: "RELEASE SAVEPOINT database_transaction;")
+				return result
 			} catch {
 				try execute(raw: "ROLLBACK;")
 				throw error
@@ -375,7 +376,10 @@ extension Database {
 extension Database {
 	private class func open(at path: String) throws -> OpaquePointer {
 		var optionalConnection: OpaquePointer?
-		let result = sqlite3_open(path, &optionalConnection)
+//		let result = sqlite3_open(path, &optionalConnection)
+	    let result = sqlite3_open_v2(path, &optionalConnection,
+	    	SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+	    	nil)
 
 		guard SQLITE_OK == result else {
 			Database.close(optionalConnection)

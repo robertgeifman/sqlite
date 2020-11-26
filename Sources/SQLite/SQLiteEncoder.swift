@@ -12,14 +12,14 @@ public final class SQLiteEncoder {
 		let encoder = _SQLiteEncoder(_database)
 		if let array = value as? Array<Encodable> {
 			do {
-				try _database.inTransaction {
+                try _database.inTransaction { db in
 					try array.forEach {
 						try $0.encode(to: encoder)
 						var elementArguments = encoder.encodedArguments
 						for (key, value) in arguments {
 							elementArguments[key] = value
 						}
-						try _database.write(sql, arguments: elementArguments)
+                        try db.write(sql, arguments: encoder.encodedArguments)
 					}
 				}
 			} catch {
@@ -74,7 +74,7 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 	}
 
 	mutating func encode<T>(entity: T, forKey key: K) throws where T: Encodable {
-		print("\(type(of: self)).encode Serializable for key: \(key)")
+//		print("\(type(of: self)).encode Serializable for key: \(key)")
 		guard let entity = entity as? Encodable & SQLiteSerializable else {
 			throw SQLiteEncoder.Error.invalidType(T.self)
 		}
