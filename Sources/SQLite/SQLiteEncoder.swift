@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - SQLiteEncoder
 public final class SQLiteEncoder {
 	private let _database: Database
 
@@ -37,6 +38,7 @@ public final class SQLiteEncoder {
 	}
 }
 
+// MARK: - internal implementation
 private class _SQLiteEncoder: Swift.Encoder {
 	let _database: Database
 	let _storage = _KeyedStorage()
@@ -52,11 +54,9 @@ private class _SQLiteEncoder: Swift.Encoder {
 		_storage.reset()
 		return KeyedEncodingContainer(_KeyedContainer<Key>(storage: _storage, database: _database))
 	}
-
 	func unkeyedContainer() -> UnkeyedEncodingContainer {
 		fatalError("_SQLiteEncoder doesn't support unkeyed encoding")
 	}
-
 	func singleValueContainer() -> SingleValueEncodingContainer {
 		fatalError("_SQLiteEncoder doesn't support single value encoding")
 	}
@@ -73,110 +73,19 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 		self._database = database
 	}
 
-	mutating func encodeNil(forKey key: K) throws {
-		print("SQLiteEncoder.encode Nil for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .null
+	mutating func encode<T>(entity: T, forKey key: K) throws where T: Encodable {
+		print("\(type(of: self)).encode Serializable for key: \(key)")
+		guard let entity = entity as? Encodable & SQLiteSerializable else {
+			throw SQLiteEncoder.Error.invalidType(T.self)
+		}
+		let encoder = _SQLiteEncoder(_database)
+		try entity.encode(to: encoder)
+		let entityType = type(of: entity)
+		let sql = entityType.upsert.replacingOccurrences(of: ":table", with: entityType.recordType)
+		try _database.write(sql, arguments: encoder.encodedArguments)
+		_storage[key.stringValue] = .text(entity.id.uuidString)
 	}
-
-	mutating func encode(_ value: Bool, forKey key: K) throws {
-		print("SQLiteEncoder.encode Bool \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(value ? 1 : 0)
-	}
-
-	mutating func encode(_ value: Int, forKey key: K) throws {
-		print("SQLiteEncoder.encode Int \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: Int8, forKey key: K) throws {
-		print("SQLiteEncoder.encode Int8 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: Int16, forKey key: K) throws {
-		print("SQLiteEncoder.encode Int16 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: Int32, forKey key: K) throws {
-		print("SQLiteEncoder.encode Int32 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: Int64, forKey key: K) throws {
-		print("SQLiteEncoder.encode Int64 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(value)
-	}
-
-	mutating func encode(_ value: UInt, forKey key: K) throws {
-		print("SQLiteEncoder.encode UInt \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: UInt8, forKey key: K) throws {
-		print("SQLiteEncoder.encode UInt8 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: UInt16, forKey key: K) throws {
-		print("SQLiteEncoder.encode Bool \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: UInt32, forKey key: K) throws {
-		print("SQLiteEncoder.encode UInt32 \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: UInt64, forKey key: K) throws {
-		print("SQLiteEncoder.encode UInt64 \(value) for key: \(K.self) - \(key)")
-		guard value < Int64.max else { throw SQLiteEncoder.Error.invalidValue(value) }
-		_storage[key.stringValue] = .integer(Int64(value))
-	}
-
-	mutating func encode(_ value: Float, forKey key: K) throws {
-		print("SQLiteEncoder.encode Float \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .double(Double(value))
-	}
-
-	mutating func encode(_ value: Double, forKey key: K) throws {
-		print("SQLiteEncoder.encode Double \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .double(value)
-	}
-
-	mutating func encode(_ value: String, forKey key: K) throws {
-		print("SQLiteEncoder.encode String \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .text(value)
-	}
-
-	mutating func encode(_ value: Data, forKey key: K) throws {
-		print("SQLiteEncoder.encode Data \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .data(value)
-	}
-
-	mutating func encode(_ value: Date, forKey key: K) throws {
-		print("SQLiteEncoder.encode Date \(value) for key: \(K.self) - \(key)")
-		let string = PreciseDateFormatter.string(from: value)
-		_storage[key.stringValue] = .text(string)
-	}
-
-	mutating func encode(_ value: URL, forKey key: K) throws {
-		print("SQLiteEncoder.encode URL \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .text(value.absoluteString)
-	}
-
-	mutating func encode(_ value: UUID, forKey key: K) throws {
-		print("SQLiteEncoder.encode UUID \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .text(value.uuidString)
-	}
-
-	mutating func encode(_ value: AnyEntityID, forKey key: K) throws {
-		print("SQLiteEncoder.encode AnyEntityID \(value) for key: \(K.self) - \(key)")
-		_storage[key.stringValue] = .text(value.uuidString)
-	}
-
-	mutating func encode<T>(_ value: T, forKey key: K) throws
-		where T: Encodable {
+	mutating func encode<T>(_ value: T, forKey key: K) throws where T: Encodable {
 		if let data = value as? Data {
 			try encode(data, forKey: key)
 		} else if let date = value as? Date {
@@ -187,19 +96,98 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 			try encode(uuid, forKey: key)
 		} else if let id = value as? AnyEntityID {
 			try encode(id, forKey: key)
-		} else if let entity = value as? Encodable & SQLiteSerializable {
-			print("SQLiteEncoder.encode Serializable for key: \(K.self) - \(key)")
-			let encoder = _SQLiteEncoder(_database)
-			try entity.encode(to: encoder)
-			_storage[key.stringValue] = .text(entity.id.uuidString)
+		} else if nil != value as? Encodable & SQLiteSerializable {
+			try encode(entity: value, forKey: key)
 		} else {
-			print("SQLiteEncoder.encode as JSON for key: \(K.self) - \(key)")
+			// print("\(type(of: self)).decode as JSON for key: \(key)")
 			let jsonData = try jsonEncoder.encode(value)
 			guard let jsonText = String(data: jsonData, encoding: .utf8) else {
 				throw SQLiteEncoder.Error.invalidJSON(jsonData)
 			}
 			_storage[key.stringValue] = .text(jsonText)
 		}
+	}
+	mutating func encode(_ value: String, forKey key: K) throws {
+		// print("\(type(of: self)).decode String \(value) for key: \(key)")
+		_storage[key.stringValue] = .text(value)
+	}
+	mutating func encode(_ value: Data, forKey key: K) throws {
+		// print("\(type(of: self)).decode Data \(value) for key: \(key)")
+		_storage[key.stringValue] = .data(value)
+	}
+	mutating func encode(_ value: Date, forKey key: K) throws {
+		// print("\(type(of: self)).decode Date \(value) for key: \(key)")
+		let string = PreciseDateFormatter.string(from: value)
+		_storage[key.stringValue] = .text(string)
+	}
+	mutating func encode(_ value: URL, forKey key: K) throws {
+		// print("\(type(of: self)).decode URL \(value) for key: \(key)")
+		_storage[key.stringValue] = .text(value.absoluteString)
+	}
+	mutating func encode(_ value: UUID, forKey key: K) throws {
+		// print("\(type(of: self)).decode UUID \(value) for key: \(key)")
+		_storage[key.stringValue] = .text(value.uuidString)
+	}
+	mutating func encode(_ value: AnyEntityID, forKey key: K) throws {
+		// print("\(type(of: self)).decode AnyEntityID \(value) for key: \(key)")
+		_storage[key.stringValue] = .text(value.uuidString)
+	}
+	mutating func encode(_ value: Bool, forKey key: K) throws {
+		// print("\(type(of: self)).decode Bool \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(value ? 1 : 0)
+	}
+	mutating func encode(_ value: Int, forKey key: K) throws {
+		// print("\(type(of: self)).decode Int \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: Int8, forKey key: K) throws {
+		// print("\(type(of: self)).decode Int8 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: Int16, forKey key: K) throws {
+		// print("\(type(of: self)).decode Int16 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: Int32, forKey key: K) throws {
+		// print("\(type(of: self)).decode Int32 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: Int64, forKey key: K) throws {
+		// print("\(type(of: self)).decode Int64 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(value)
+	}
+	mutating func encode(_ value: UInt, forKey key: K) throws {
+		// print("\(type(of: self)).decode UInt \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: UInt8, forKey key: K) throws {
+		// print("\(type(of: self)).decode UInt8 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: UInt16, forKey key: K) throws {
+		// print("\(type(of: self)).decode Bool \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: UInt32, forKey key: K) throws {
+		// print("\(type(of: self)).decode UInt32 \(value) for key: \(key)")
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: UInt64, forKey key: K) throws {
+		// print("\(type(of: self)).decode UInt64 \(value) for key: \(key)")
+		guard value < Int64.max else { throw SQLiteEncoder.Error.invalidValue(value) }
+		_storage[key.stringValue] = .integer(Int64(value))
+	}
+	mutating func encode(_ value: Float, forKey key: K) throws {
+		// print("\(type(of: self)).decode Float \(value) for key: \(key)")
+		_storage[key.stringValue] = .double(Double(value))
+	}
+	mutating func encode(_ value: Double, forKey key: K) throws {
+		// print("\(type(of: self)).decode Double \(value) for key: \(key)")
+		_storage[key.stringValue] = .double(value)
+	}
+	mutating func encodeNil(forKey key: K) throws {
+		// print("\(type(of: self)).decode Nil for key: \(key)")
+		_storage[key.stringValue] = .null
 	}
 
 	mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: K) -> KeyedEncodingContainer<NestedKey> where NestedKey : CodingKey {
@@ -266,7 +254,7 @@ public extension SQLiteEncoder.Error {
 
 	var recoverySuggestion: String? {
 		switch self {
-		case let .invalidType(value): return "`\(type(of: value))`"
+		case let .invalidType(value): return "`\(value)`"
 		case let .invalidValue(value): return "`\(value)`"
 		case .invalidJSON: return nil
 		case .transactionFailed: return nil

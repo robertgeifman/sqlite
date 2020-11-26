@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - SQLiteDecoder
 public final class SQLiteDecoder {
 	private let _database: Database
 
@@ -47,6 +48,7 @@ public final class SQLiteDecoder {
 	}
 }
 
+// MARK: - internal implementation
 private class _SQLiteDecoder: Swift.Decoder {
 	let _database: Database
 	var row: SQLiteRow?
@@ -62,11 +64,9 @@ private class _SQLiteDecoder: Swift.Decoder {
 		guard let row = self.row else { fatalError() }
 		return KeyedDecodingContainer(_KeyedContainer<Key>(database: _database, row: row))
 	}
-
 	func unkeyedContainer() throws -> UnkeyedDecodingContainer {
 		fatalError("SQLiteDecoder doesn't support unkeyed decoding")
 	}
-
 	func singleValueContainer() throws -> SingleValueDecodingContainer {
 		fatalError("SQLiteDecoder doesn't support single value decoding")
 	}
@@ -80,7 +80,6 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 	let codingPath: [CodingKey] = []
 	var allKeys: [K] { return _row.keys.compactMap { K(stringValue: $0) } }
 
-
 	init(database: Database, row: SQLiteRow) {
 		self._database = database
 		self._row = row
@@ -90,171 +89,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		return _row[key.stringValue] != nil
 	}
 
-	func decodeNil(forKey key: K) throws -> Bool {
-		print("SQLiteDecoder.decode Nil for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue] else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-
-		if case .null = value {
-			return true
-		} else {
-			return false
-		}
-	}
-
-	func decode(_ type: Bool.Type, forKey key: K) throws -> Bool {
-		print("SQLiteDecoder.decode Bool for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.boolValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: Int.Type, forKey key: K) throws -> Int {
-		print("SQLiteDecoder.decode Int for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.intValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: Int8.Type, forKey key: K) throws -> Int8 {
-		print("SQLiteDecoder.decode Int8 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return Int8(value)
-	}
-
-	func decode(_ type: Int16.Type, forKey key: K) throws -> Int16 {
-		print("SQLiteDecoder.decode Int16 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return Int16(value)
-	}
-
-	func decode(_ type: Int32.Type, forKey key: K) throws -> Int32 {
-		print("SQLiteDecoder.decode Int32 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return Int32(value)
-	}
-
-	func decode(_ type: Int64.Type, forKey key: K) throws -> Int64 {
-		print("SQLiteDecoder.decode Int64 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: UInt.Type, forKey key: K) throws -> UInt {
-		print("SQLiteDecoder.decode UInt for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return UInt(value)
-	}
-
-	func decode(_ type: UInt8.Type, forKey key: K) throws -> UInt8 {
-		print("SQLiteDecoder.decode UInt8 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return UInt8(value)
-	}
-
-	func decode(_ type: UInt16.Type, forKey key: K) throws -> UInt16 {
-		print("SQLiteDecoder.decode UInt16 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return UInt16(value)
-	}
-
-	func decode(_ type: UInt32.Type, forKey key: K) throws -> UInt32 {
-		print("SQLiteDecoder.decode UInt32 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return UInt32(value)
-	}
-
-	func decode(_ type: UInt64.Type, forKey key: K) throws -> UInt64 {
-		print("SQLiteDecoder.decode UInt64 for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.int64Value else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return UInt64(value)
-	}
-
-	func decode(_ type: Float.Type, forKey key: K) throws -> Float {
-		print("SQLiteDecoder.decode FLoat for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.doubleValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return Float(value)
-	}
-
-	func decode(_ type: Double.Type, forKey key: K) throws -> Double {
-		print("SQLiteDecoder.decode Double for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.doubleValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: String.Type, forKey key: K) throws -> String {
-		print("SQLiteDecoder.decode String for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.stringValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: Data.Type, forKey key: K) throws -> Data {
-		print("SQLiteDecoder.decode Data for key: \(K.self) - \(key)")
-		guard let value = _row[key.stringValue]?.dataValue else {
-			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
-		}
-		return value
-	}
-
-	func decode(_ type: Date.Type, forKey key: K) throws -> Date {
-		print("SQLiteDecoder.decode Date for key: \(K.self) - \(key)")
-		let string = try decode(String.self, forKey: key)
-		if let date = PreciseDateFormatter.date(from: string) {
-			return date
-		} else {
-			throw SQLiteDecoder.Error.invalidDate(string)
-		}
-	}
-
-	func decode(_ type: URL.Type, forKey key: K) throws -> URL {
-		print("SQLiteDecoder.decode URL for key: \(K.self) - \(key)")
-		let string = try decode(String.self, forKey: key)
-		if let url = URL(string: string) {
-			return url
-		} else {
-			throw SQLiteDecoder.Error.invalidURL(string)
-		}
-	}
-
-	func decode(_ type: UUID.Type, forKey key: K) throws -> UUID {
-		print("SQLiteDecoder.decode UUID for key: \(K.self) - \(key)")
-		let string = try decode(String.self, forKey: key)
-		if let uuid = UUID(uuidString: string) {
-			return uuid
-		} else {
-			throw SQLiteDecoder.Error.invalidUUID(string)
-		}
-	}
-
-	func decode<T>(_ type: T.Type, forKey key: K) throws -> T
-		where T: Decodable {
+	func decode<T>(_ type: T.Type, forKey key: K) throws -> T where T: Decodable {
 		if Data.self == T.self {
 			return try decode(Data.self, forKey: key) as! T
 		} else if Date.self == T.self {
@@ -272,21 +107,22 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		} else if UUID.self == T.self {
 			return try decode(UUID.self, forKey: key) as! T
 		} else {
-			print("SQLiteDecoder.decode \(T.self) for key: \(K.self) - \(key)")
+			// print("\(type(of: self)).decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self, forKey: key)
 			
 			if nil != UUID(uuidString: stringValue)  {
-				print("\tdecoding as SQLiteSerializable")
+//				print("\tdecoding as SQLiteSerializable")
 				let decoder = SQLiteDecoder(_database)
-				let fetch = "SELECT * FROM :table WHERE uuid=:id;"
-				return try decoder.decode(T.self, using: fetch.replacingOccurrences(of: ":table", with: "\(T.self)"),
+				let fetch = "SELECT * FROM \":table\" WHERE uuid=:id;"
+				let recordType = "\(T.self)".lowercased()
+				return try decoder.decode(T.self, using: fetch.replacingOccurrences(of: ":table", with: recordType),
 					arguments: ["id": .text(stringValue)])
 			}
 
 			guard let jsonData = stringValue.data(using: .utf8) else {
 				throw SQLiteDecoder.Error.invalidJSON(stringValue)
 			}
-			print("\tdecoding as JSON")
+//			print("\tdecoding as JSON")
 			do {
 				let result = try jsonDecoder.decode(T.self, from: jsonData)
 				return result
@@ -297,7 +133,151 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 			}
 		}
 	}
+	func decode(_ type: String.Type, forKey key: K) throws -> String {
+		// print("\(type(of: self)).decode String for key: \(key)")
+		guard let value = _row[key.stringValue]?.stringValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decode(_ type: Data.Type, forKey key: K) throws -> Data {
+		// print("\(type(of: self)).decode Data for key: \(key)")
+		guard let value = _row[key.stringValue]?.dataValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decode(_ type: Date.Type, forKey key: K) throws -> Date {
+		// print("\(type(of: self)).decode Date for key: \(key)")
+		let string = try decode(String.self, forKey: key)
+		if let date = PreciseDateFormatter.date(from: string) {
+			return date
+		} else {
+			throw SQLiteDecoder.Error.invalidDate(string)
+		}
+	}
+	func decode(_ type: URL.Type, forKey key: K) throws -> URL {
+		// print("\(type(of: self)).decode URL for key: \(key)")
+		let string = try decode(String.self, forKey: key)
+		if let url = URL(string: string) {
+			return url
+		} else {
+			throw SQLiteDecoder.Error.invalidURL(string)
+		}
+	}
+	func decode(_ type: UUID.Type, forKey key: K) throws -> UUID {
+		// print("\(type(of: self)).decode UUID for key: \(key)")
+		let string = try decode(String.self, forKey: key)
+		if let uuid = UUID(uuidString: string) {
+			return uuid
+		} else {
+			throw SQLiteDecoder.Error.invalidUUID(string)
+		}
+	}
+	func decode(_ type: Bool.Type, forKey key: K) throws -> Bool {
+		// print("\(type(of: self)).decode Bool for key: \(key)")
+		guard let value = _row[key.stringValue]?.boolValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decode(_ type: Int.Type, forKey key: K) throws -> Int {
+		// print("\(type(of: self)).decode Int for key: \(key)")
+		guard let value = _row[key.stringValue]?.intValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decode(_ type: Int8.Type, forKey key: K) throws -> Int8 {
+		// print("\(type(of: self)).decode Int8 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return Int8(value)
+	}
+	func decode(_ type: Int16.Type, forKey key: K) throws -> Int16 {
+		// print("\(type(of: self)).decode Int16 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return Int16(value)
+	}
+	func decode(_ type: Int32.Type, forKey key: K) throws -> Int32 {
+		// print("\(type(of: self)).decode Int32 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return Int32(value)
+	}
+	func decode(_ type: Int64.Type, forKey key: K) throws -> Int64 {
+		// print("\(type(of: self)).decode Int64 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decode(_ type: UInt.Type, forKey key: K) throws -> UInt {
+		// print("\(type(of: self)).decode UInt for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return UInt(value)
+	}
+	func decode(_ type: UInt8.Type, forKey key: K) throws -> UInt8 {
+		// print("\(type(of: self)).decode UInt8 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return UInt8(value)
+	}
+	func decode(_ type: UInt16.Type, forKey key: K) throws -> UInt16 {
+		// print("\(type(of: self)).decode UInt16 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return UInt16(value)
+	}
+	func decode(_ type: UInt32.Type, forKey key: K) throws -> UInt32 {
+		// print("\(type(of: self)).decode UInt32 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return UInt32(value)
+	}
+	func decode(_ type: UInt64.Type, forKey key: K) throws -> UInt64 {
+		// print("\(type(of: self)).decode UInt64 for key: \(key)")
+		guard let value = _row[key.stringValue]?.int64Value else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return UInt64(value)
+	}
+	func decode(_ type: Float.Type, forKey key: K) throws -> Float {
+		// print("\(type(of: self)).decode FLoat for key: \(key)")
+		guard let value = _row[key.stringValue]?.doubleValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return Float(value)
+	}
+	func decode(_ type: Double.Type, forKey key: K) throws -> Double {
+		// print("\(type(of: self)).decode Double for key: \(key)")
+		guard let value = _row[key.stringValue]?.doubleValue else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
+		return value
+	}
+	func decodeNil(forKey key: K) throws -> Bool {
+		// print("\(type(of: self)).decode Nil for key: \(key)")
+		guard let value = _row[key.stringValue] else {
+			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
+		}
 
+		if case .null = value {
+			return true
+		} else {
+			return false
+		}
+	}
+	
 	func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: K) throws -> KeyedDecodingContainer<NestedKey> where NestedKey: CodingKey {
 		fatalError("_KeyedContainer does not support nested containers.")
 	}

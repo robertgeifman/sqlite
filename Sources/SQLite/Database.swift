@@ -368,7 +368,7 @@ extension Database {
 	}
 
 	private func sync<T>(_ block: () throws -> T) rethrows -> T {
-		try isOnDatabaseQueue ? block() : try _queue.sync(execute: block)
+		try isOnDatabaseQueue ? block() : _queue.sync(execute: block)
 	}
 }
 
