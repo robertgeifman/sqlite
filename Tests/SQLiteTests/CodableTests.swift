@@ -54,7 +54,7 @@ class CodableTests: XCTestCase {
         var updated = original
         updated.uuid = UUID()
         updated.optionalString = "Now it's something"
-        updated.optionalDate = Date(timeIntervalSinceReferenceDate: 123456789)
+        updated.optionalDate = Date(timeIntervalSince1970: 123456789)
         updated.inner.optionalBool = false
 
         let encoder = SQLiteEncoder(database)
@@ -72,8 +72,8 @@ class CodableTests: XCTestCase {
         let original1 = _nils
         var updated1 = original1
         updated1.optionalString = "Now it's something"
-        updated1.optionalDate = Date(timeIntervalSinceReferenceDate: 123456789)
-        updated1.inner.date = Date(timeIntervalSinceReferenceDate: 987654321)
+        updated1.optionalDate = Date(timeIntervalSince1970: 123456789)
+        updated1.inner.date = Date(timeIntervalSince1970: 987654321)
 
         let original2 = _noNils
         var updated2 = original2
