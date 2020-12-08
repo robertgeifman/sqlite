@@ -522,7 +522,7 @@ public extension SQLiteDecoder.Error {
 	var recoverySuggestion: String? {
 		switch self {
 		case let .incorrectNumberOfResults(number): return "\(number)"
-		case let .emptyResult: return nil
+		case .emptyResult: return nil
 		case let .missingValueForKey(string): return "`\(string)`"
 		case let .invalidDate(string): return "`\(string)`"
 		case let .invalidURL(string): return "`\(string)`"
