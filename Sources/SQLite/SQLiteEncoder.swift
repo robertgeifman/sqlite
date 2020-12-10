@@ -108,85 +108,65 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 		}
 	}
 	mutating func encode(_ value: String, forKey key: K) throws {
-		// print("\(type(of: self)).decode String \(value) for key: \(key)")
 		_storage[key.stringValue] = .text(value)
 	}
 	mutating func encode(_ value: Data, forKey key: K) throws {
-		// print("\(type(of: self)).decode Data \(value) for key: \(key)")
 		_storage[key.stringValue] = .data(value)
 	}
 	mutating func encode(_ value: Date, forKey key: K) throws {
-		// print("\(type(of: self)).decode Date \(value) for key: \(key)")
 		let string = PreciseDateFormatter.string(from: value)
 		_storage[key.stringValue] = .text(string)
 	}
 	mutating func encode(_ value: URL, forKey key: K) throws {
-		// print("\(type(of: self)).decode URL \(value) for key: \(key)")
 		_storage[key.stringValue] = .text(value.absoluteString)
 	}
 	mutating func encode(_ value: UUID, forKey key: K) throws {
-		// print("\(type(of: self)).decode UUID \(value) for key: \(key)")
 		_storage[key.stringValue] = .text(value.uuidString)
 	}
 	mutating func encode(_ value: AnyEntityID, forKey key: K) throws {
-		// print("\(type(of: self)).decode AnyEntityID \(value) for key: \(key)")
 		_storage[key.stringValue] = .text(value.uuidString)
 	}
 	mutating func encode(_ value: Bool, forKey key: K) throws {
-		// print("\(type(of: self)).decode Bool \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(value ? 1 : 0)
 	}
 	mutating func encode(_ value: Int, forKey key: K) throws {
-		// print("\(type(of: self)).decode Int \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: Int8, forKey key: K) throws {
-		// print("\(type(of: self)).decode Int8 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: Int16, forKey key: K) throws {
-		// print("\(type(of: self)).decode Int16 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: Int32, forKey key: K) throws {
-		// print("\(type(of: self)).decode Int32 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: Int64, forKey key: K) throws {
-		// print("\(type(of: self)).decode Int64 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(value)
 	}
 	mutating func encode(_ value: UInt, forKey key: K) throws {
-		// print("\(type(of: self)).decode UInt \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: UInt8, forKey key: K) throws {
-		// print("\(type(of: self)).decode UInt8 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: UInt16, forKey key: K) throws {
-		// print("\(type(of: self)).decode Bool \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: UInt32, forKey key: K) throws {
-		// print("\(type(of: self)).decode UInt32 \(value) for key: \(key)")
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: UInt64, forKey key: K) throws {
-		// print("\(type(of: self)).decode UInt64 \(value) for key: \(key)")
 		guard value < Int64.max else { throw SQLiteEncoder.Error.invalidValue(value) }
 		_storage[key.stringValue] = .integer(Int64(value))
 	}
 	mutating func encode(_ value: Float, forKey key: K) throws {
-		// print("\(type(of: self)).decode Float \(value) for key: \(key)")
 		_storage[key.stringValue] = .double(Double(value))
 	}
 	mutating func encode(_ value: Double, forKey key: K) throws {
-		// print("\(type(of: self)).decode Double \(value) for key: \(key)")
 		_storage[key.stringValue] = .double(value)
 	}
 	mutating func encodeNil(forKey key: K) throws {
-		// print("\(type(of: self)).decode Nil for key: \(key)")
 		_storage[key.stringValue] = .null
 	}
 
