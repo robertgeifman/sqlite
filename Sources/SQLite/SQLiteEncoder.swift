@@ -12,7 +12,7 @@ public final class SQLiteEncoder {
 		let encoder = _SQLiteEncoder(_database)
 		if let array = value as? Array<Encodable> {
 			do {
-                try _database.inTransaction { db in
+                try _database.withTransaction { db in
 					try array.forEach {
 						try $0.encode(to: encoder)
 						var elementArguments = encoder.encodedArguments
