@@ -1,5 +1,9 @@
 import Foundation
 
+public protocol SQLiteDecodable: Decodable {
+    init(from decoder: Decoder, database: Database) throws
+}
+
 // MARK: - SQLiteDecoder
 public final class SQLiteDecoder {
 	private let _database: Database
@@ -25,7 +29,7 @@ public final class SQLiteDecoder {
 		let result = results[0]
 		return result
 	}
-
+	@_disfavoredOverload
 	public func decodeIfPresent<T: Decodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
 		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
 		guard results.isEmpty || results.count == 1 else {
@@ -37,12 +41,48 @@ public final class SQLiteDecoder {
 		let result = results[0]
 		return result
 	}
+	public func decodeIfPresent<T: SQLiteDecodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
+		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
+		guard results.isEmpty || results.count == 1 else {
+			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
+		}
+		
+		if results.isEmpty { return nil }
+		//let result = results.first
+		let result = results[0]
+		return result
+	}
 
+	public func decode<T: SQLiteDecodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
+		var results: [T]
+		do {
+			results = try decode([T].self, using: sql, arguments: arguments)
+		} catch {
+			print(error)
+			throw error
+		}
+		guard results.count == 1 else {
+			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
+		}
+
+		//let result = results.first
+		let result = results[0]
+		return result
+	}
+	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
 		let results = try _database.read(sql, arguments: arguments)
 		return try results.map { [decoder = _SQLiteDecoder(database: _database)] in
 			decoder.row = $0
 			let result = try T(from: decoder)
+			return result
+		}
+	}
+	public func decode<T: SQLiteDecodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
+		let results = try _database.read(sql, arguments: arguments)
+		return try results.map { [decoder = _SQLiteDecoder(database: _database)] in
+			decoder.row = $0
+			let result = try T(from: decoder, database: _database)
 			return result
 		}
 	}
@@ -198,23 +238,18 @@ class _SingleValueContainer: SingleValueDecodingContainer {
 		} else if UUID.self == T.self {
 			return try decode(UUID.self) as! T
 		} else {
-			// print("\(type(of: self)).decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self)
-			
 			if nil != UUID(uuidString: stringValue)  {
-//				print("\tdecoding as SQLiteSerializable")
-				let decoder = SQLiteDecoder(_database)
-
-				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
 				let recordType = "\(T.self)".lowercased()
-				return try decoder.decode(T.self, using: sql.replacingOccurrences(of: ":table", with: recordType),
+				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
+				return try SQLiteDecoder(_database).decode(T.self,
+					using: sql.replacingOccurrences(of: ":table", with: recordType),
 					arguments: ["id": .text(stringValue)])
 			}
 
 			guard let jsonData = stringValue.data(using: .utf8) else {
 				throw SQLiteDecoder.Error.invalidJSON(stringValue)
 			}
-//			print("\tdecoding as JSON")
 			do {
 				let result = try jsonDecoder.decode(T.self, from: jsonData)
 				return result
