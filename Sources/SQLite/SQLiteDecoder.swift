@@ -1,7 +1,7 @@
 import Foundation
 
 public protocol SQLiteDecodable: Decodable {
-    init(from decoder: Decoder, database: Database) throws
+//    init(from decoder: Decoder, database: Database) throws
 }
 
 // MARK: - SQLiteDecoder
@@ -75,14 +75,6 @@ public final class SQLiteDecoder {
 		return try results.map { [decoder = _SQLiteDecoder(database: _database)] in
 			decoder.row = $0
 			let result = try T(from: decoder)
-			return result
-		}
-	}
-	public func decode<T: SQLiteDecodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
-		let results = try _database.read(sql, arguments: arguments)
-		return try results.map { [decoder = _SQLiteDecoder(database: _database)] in
-			decoder.row = $0
-			let result = try T(from: decoder, database: _database)
 			return result
 		}
 	}
