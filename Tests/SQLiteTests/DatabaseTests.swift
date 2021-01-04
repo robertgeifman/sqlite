@@ -239,7 +239,7 @@ class DatabaseTests: XCTestCase {
             }
         }
 
-        XCTAssertNoThrow(try database.inTransaction(block))
+        XCTAssertNoThrow(try database.withTransaction(block))
 
         for (id, target) in [1: one, 2: two, 3: three, 4: four, 5: five] {
             var fetched: Array<SQLiteRow> = []
@@ -257,7 +257,7 @@ class DatabaseTests: XCTestCase {
         XCTAssertNoThrow(try database.write(_insertIDAndData, arguments: one))
 
         let block = { try self.database.write(self._insertIDAndData, arguments: two) }
-        XCTAssertThrowsError(try database.inTransaction(block))
+        XCTAssertThrowsError(try database.withTransaction(block))
 
         var fetched: Array<SQLiteRow> = []
         XCTAssertNoThrow(fetched = try database.read(_selectWhereID, arguments: ["id": .integer(1)]))
@@ -272,16 +272,16 @@ class DatabaseTests: XCTestCase {
 
         XCTAssertNoThrow(try database.execute(raw: _createTableWithBlob))
 
-        try database.inTransaction {
+        try database.withTransaction {
             XCTAssertTrue(database.hasOpenTransactions)
             XCTAssertNoThrow(try database.write(_insertIDAndData, arguments: arguments(with: 1)))
         }
         XCTAssertFalse(database.hasOpenTransactions)
 
-        try database.inTransaction {
+        try database.withTransaction {
             XCTAssertTrue(database.hasOpenTransactions)
             XCTAssertNoThrow(try database.write(_insertIDAndData, arguments: arguments(with: 2)))
-            try database.inTransaction {
+            try database.withTransaction {
                 XCTAssertTrue(database.hasOpenTransactions)
                 XCTAssertNoThrow(try database.write(_insertIDAndData, arguments: arguments(with: 3)))
             }
