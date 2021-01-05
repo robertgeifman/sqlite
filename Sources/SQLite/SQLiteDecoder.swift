@@ -6,12 +6,24 @@ public protocol SQLiteDecodable: Decodable {
 
 // MARK: - SQLiteDecoder
 public final class SQLiteDecoder {
+	static var registeredTypes = Set<String>()
+	static var registeredIDs = Set<String>()
 	private let _database: Database
 
 	public init(_ database: Database) {
 		self._database = database
 	}
 
+	public static func register<T: Entity>(_ type: T.Type) {
+		registeredTypes.insert("\(type)")
+		registeredIDs.insert("\(T.ID.self)")
+	}
+	public static func isRegisteredID<T>(_ type: T.Type) -> Bool {
+		registeredIDs.contains("\(T.self)")
+	}
+	public static func isRegisteredType<T>(_ type: T.Type) -> Bool {
+		registeredTypes.contains("\(T.self)")
+	}
 	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
 		var results: [T]
@@ -420,20 +432,23 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 			// print("\(type(of: self)).decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self, forKey: key)
 			
-			if let uuid = UUID(uuidString: stringValue)  {
-//				print("\tdecoding as SQLiteSerializable")
-				let decoder = SQLiteDecoder(_database)
-
-				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
-				let recordType = "\(T.self)".lowercased()
-				if recordType.contains("entityid<") {
+			if let uuid = UUID(uuidString: stringValue) {
+				if SQLiteDecoder.isRegisteredID(T.self) {
 //					print("decoding \(T.self) = \(stringValue)")
 					return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(uuid))
 				}
-				let query = sql.replacingOccurrences(of: ":table", with: recordType)
-//				print("decoding \(T.self): \(query), \(stringValue)")
-				return try decoder.decode(T.self, using: query,
-					arguments: ["id": .text(stringValue)])
+				
+				if SQLiteDecoder.isRegisteredType(T.self) {
+	//				print("\tdecoding as SQLiteSerializable")
+					let decoder = SQLiteDecoder(_database)
+
+					let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
+					let recordType = "\(T.self)".lowercased()
+					let query = sql.replacingOccurrences(of: ":table", with: recordType)
+	//				print("decoding \(T.self): \(query), \(stringValue)")
+					return try decoder.decode(T.self, using: query,
+						arguments: ["id": .text(stringValue)])
+				}
 			}
 
 			guard let jsonData = stringValue.data(using: .utf8) else {
