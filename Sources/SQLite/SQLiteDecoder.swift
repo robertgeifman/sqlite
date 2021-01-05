@@ -231,8 +231,11 @@ class _SingleValueContainer: SingleValueDecodingContainer {
 			return try decode(UUID.self) as! T
 		} else {
 			let stringValue = try decode(String.self)
-			if nil != UUID(uuidString: stringValue)  {
+			if let uuid = UUID(uuidString: stringValue) {
 				let recordType = "\(T.self)".lowercased()
+				if recordType.contains("entityid<") {
+					return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(uuid))
+				}
 				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
 				return try SQLiteDecoder(_database).decode(T.self,
 					using: sql.replacingOccurrences(of: ":table", with: recordType),
@@ -417,13 +420,19 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 			// print("\(type(of: self)).decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self, forKey: key)
 			
-			if nil != UUID(uuidString: stringValue)  {
+			if let uuid = UUID(uuidString: stringValue)  {
 //				print("\tdecoding as SQLiteSerializable")
 				let decoder = SQLiteDecoder(_database)
 
 				let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
 				let recordType = "\(T.self)".lowercased()
-				return try decoder.decode(T.self, using: sql.replacingOccurrences(of: ":table", with: recordType),
+				if recordType.contains("entityid<") {
+//					print("decoding \(T.self) = \(stringValue)")
+					return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(uuid))
+				}
+				let query = sql.replacingOccurrences(of: ":table", with: recordType)
+//				print("decoding \(T.self): \(query), \(stringValue)")
+				return try decoder.decode(T.self, using: query,
 					arguments: ["id": .text(stringValue)])
 			}
 
