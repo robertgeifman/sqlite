@@ -73,12 +73,10 @@ public final class SQLiteDecoder {
 			print(error)
 			throw error
 		}
-		guard results.count == 1 else {
+		guard let result = results.first else {
 			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
 		}
 
-		//let result = results.first
-		let result = results[0]
 		return result
 	}
 	@_disfavoredOverload
