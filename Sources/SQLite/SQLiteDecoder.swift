@@ -6,7 +6,7 @@ public protocol SQLiteDecodable: Decodable {
 
 // MARK: - SQLiteDecoder
 public final class SQLiteDecoder {
-	static var registeredTypes = Set<String>()
+	static var registeredTypes = [String: String]()
 	static var registeredIDs = Set<String>()
 	private let _database: Database
 
@@ -14,15 +14,15 @@ public final class SQLiteDecoder {
 		self._database = database
 	}
 
-	public static func register<T: Entity>(_ type: T.Type) {
-		registeredTypes.insert("\(type)")
+	public static func register<T: Entity>(_ type: T.Type, primaryKey: String) {
+		registeredTypes["\(type)"] = primaryKey
 		registeredIDs.insert("\(T.ID.self)")
 	}
 	public static func isRegisteredID<T>(_ type: T.Type) -> Bool {
 		registeredIDs.contains("\(T.self)")
 	}
-	public static func isRegisteredType<T>(_ type: T.Type) -> Bool {
-		registeredTypes.contains("\(T.self)")
+	public static func registeredPrimaryKey<T>(_ type: T.Type) -> String? {
+		registeredTypes["\(T.self)"]
 	}
 	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
@@ -427,7 +427,7 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		} else if UUID.self == T.self {
 			return try decode(UUID.self, forKey: key) as! T
 		} else {
-			// print("\(type(of: self)).decode \(T.self) for key: \(key)")
+//			 print("decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self, forKey: key)
 			
 			if let uuid = UUID(uuidString: stringValue) {
@@ -436,15 +436,13 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 					return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(uuid))
 				}
 				
-				if SQLiteDecoder.isRegisteredType(T.self) {
-	//				print("\tdecoding as SQLiteSerializable")
+				if let key = SQLiteDecoder.registeredPrimaryKey(T.self) {
 					let decoder = SQLiteDecoder(_database)
 
-					let sql = "SELECT * FROM \":table\" WHERE uuid=:id;"
 					let recordType = "\(T.self)".lowercased()
-					let query = sql.replacingOccurrences(of: ":table", with: recordType)
-	//				print("decoding \(T.self): \(query), \(stringValue)")
-					return try decoder.decode(T.self, using: query,
+					let sql = "SELECT * FROM \"\(recordType)\" WHERE \(key)=:id;"
+//					print("decoding \(T.self): \(sql), \(stringValue)")
+					return try decoder.decode(T.self, using: sql,
 						arguments: ["id": .text(stringValue)])
 				}
 			}
