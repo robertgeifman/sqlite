@@ -1,8 +1,5 @@
 import Foundation
-
-public protocol SQLiteDecodable: Decodable {
-//    init(from decoder: Decoder, database: Database) throws
-}
+import FoundationAdditions
 
 // MARK: - SQLiteDecoder
 public final class SQLiteDecoder {
@@ -53,32 +50,7 @@ public final class SQLiteDecoder {
 		let result = results[0]
 		return result
 	}
-	public func decodeIfPresent<T: SQLiteDecodable>(_ type: T.Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T? {
-		let results: [T] = try decode([T].self, using: sql, arguments: arguments)
-		guard results.isEmpty || results.count == 1 else {
-			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
-		}
-		
-		if results.isEmpty { return nil }
-		//let result = results.first
-		let result = results[0]
-		return result
-	}
 
-	public func decode<T: SQLiteDecodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
-		var results: [T]
-		do {
-			results = try decode([T].self, using: sql, arguments: arguments)
-		} catch {
-			print(error)
-			throw error
-		}
-		guard let result = results.first else {
-			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
-		}
-
-		return result
-	}
 	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: [T].Type, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> [T] {
 		let results = try _database.read(sql, arguments: arguments)

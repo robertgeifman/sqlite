@@ -6,17 +6,7 @@
 //
 
 import Foundation
-
-// MARK: - AnySerializable
-public protocol AnySerializable {
-    static var recordType: String { get }
-    var recordType: String { get }
-}
-
-public extension AnySerializable {
-    static var recordType: String { String(describing: self).lowercased() }
-    var recordType: String { type(of: self).recordType }
-}
+import FoundationAdditions
 
 // MARK: - SQLiteSerializable
 public protocol SQLiteSerializable: AnySerializable {

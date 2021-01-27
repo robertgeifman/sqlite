@@ -15,13 +15,15 @@ let package = Package(
     ],
     dependencies: [
 //        .package(name: "Atomic", url: "https://github.com/shareup/atomic.git", from: "1.0.0"),
-        .package(name: "Atomic", path: "~/Projects/Packages/atomic")
+        .package(name: "Atomic", path: "~/Projects/Packages/atomic"), 
+        .package(name: "FoundationAdditions", path: "~/Projects/Packages/FoundationAdditions"),
     ],
     targets: [
         .target(
             name: "SQLite",
             dependencies: [
                 "Atomic",
+                "FoundationAdditions",
             ]),
         .testTarget(
             name: "SQLiteTests",

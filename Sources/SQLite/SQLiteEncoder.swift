@@ -1,4 +1,5 @@
 import Foundation
+import FoundationAdditions
 
 // MARK: - SQLiteEncoder
 public final class SQLiteEncoder {

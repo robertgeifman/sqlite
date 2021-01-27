@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import FoundationAdditions
 
 // MARK: - KeyedEncodingContainer
 public extension KeyedEncodingContainer {
