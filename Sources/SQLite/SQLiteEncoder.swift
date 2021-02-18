@@ -14,8 +14,8 @@ public final class SQLiteEncoder {
 		if let array = value as? Array<Encodable> {
 			do {
                 try _database.withTransaction { db in
-					try array.forEach {
-						try $0.encode(to: encoder)
+					for element in array {
+						try element.encode(to: encoder)
 						var elementArguments = encoder.encodedArguments
 						for (key, value) in arguments {
 							elementArguments[key] = value
