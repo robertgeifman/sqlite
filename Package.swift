@@ -14,8 +14,8 @@ let package = Package(
             targets: ["SQLite"]),
     ],
     dependencies: [
-        .package(name: "Atomic", path: "../atomic"),
-        .package(name: "FoundationAdditions", path: "../FoundationAdditions"),
+        .package(name: "Atomic", url: "https://github.com/robertgeifman/Atomic.git", .branch("rc-1")),
+        .package(name: "FoundationAdditions", url: "https://github.com/robertgeifman/FoundationAdditions.git", .branch("rc-1")),
     ],
     targets: [
         .target(
