@@ -12,7 +12,6 @@ import FoundationAdditions
 
 // MARK: - SQLiteSerializable
 public protocol SQLiteSerializable: AnySerializable {
-//    static var primaryKey: String { get }
     static var deleteTable: SQL { get }
     static var createTable: SQL { get }
     static var upsert: SQL { get }
