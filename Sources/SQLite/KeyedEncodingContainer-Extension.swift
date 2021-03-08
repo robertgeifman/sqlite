@@ -17,7 +17,6 @@ public extension KeyedEncodingContainer {
 	}
 
 	mutating func encode<T: Entity>(_ value: [EntityID<T>]?, forKey key: Key) throws {
-		print("\(type(of: self)).encode \(type(of: value)) for key: \(key)")
 		if let list = value { try self.encode(list.map { $0.uuid.uuidString }, forKey: key) }
 	}
 }

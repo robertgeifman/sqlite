@@ -75,7 +75,6 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 	}
 
 	mutating func encode<T>(entity: T, forKey key: K) throws where T: Encodable {
-//		print("\(type(of: self)).encode Serializable for key: \(key)")
 		guard let entity = entity as? Encodable & SQLiteSerializable else {
 			throw SQLiteEncoder.Error.invalidType(T.self)
 		}
@@ -100,7 +99,6 @@ private struct _KeyedContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
 		} else if nil != value as? Encodable & SQLiteSerializable {
 			try encode(entity: value, forKey: key)
 		} else {
-			// print("\(type(of: self)).decode as JSON for key: \(key)")
 			let jsonData = try jsonEncoder.encode(value)
 			guard let jsonText = String(data: jsonData, encoding: .utf8) else {
 				throw SQLiteEncoder.Error.invalidJSON(jsonData)

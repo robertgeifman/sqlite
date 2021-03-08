@@ -23,19 +23,11 @@ public final class SQLiteDecoder {
 	}
 	@_disfavoredOverload
 	public func decode<T: Decodable>(_ type: T.Type = T.self, using sql: SQL, arguments: SQLiteArguments = [:]) throws -> T {
-		var results: [T]
-		do {
-			results = try decode([T].self, using: sql, arguments: arguments)
-		} catch {
-			print(error)
-			throw error
-		}
-		guard results.count == 1 else {
+		let results = try decode([T].self, using: sql, arguments: arguments)
+		guard let result = results.first else {
 			throw SQLiteDecoder.Error.incorrectNumberOfResults(results.count)
 		}
 
-		//let result = results.first
-		let result = results[0]
 		return result
 	}
 	@_disfavoredOverload
@@ -227,14 +219,8 @@ class _SingleValueContainer: SingleValueDecodingContainer {
 			guard let jsonData = stringValue.data(using: .utf8) else {
 				throw SQLiteDecoder.Error.invalidJSON(stringValue)
 			}
-			do {
-				let result = try jsonDecoder.decode(T.self, from: jsonData)
-				return result
-			} catch {
-				print("error in \(#function), expectedType: \(T.self)")
-				print(error)
-				throw error
-			}
+
+			return try jsonDecoder.decode(T.self, from: jsonData)
 		}
     }
 	func decode(_ type: Data.Type) throws -> Data {
@@ -399,12 +385,10 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		} else if UUID.self == T.self {
 			return try decode(UUID.self, forKey: key) as! T
 		} else {
-//			 print("decode \(T.self) for key: \(key)")
 			let stringValue = try decode(String.self, forKey: key)
 			
 			if let uuid = UUID(uuidString: stringValue) {
 				if SQLiteDecoder.isRegisteredID(T.self) {
-//					print("decoding \(T.self) = \(stringValue)")
 					return try JSONDecoder().decode(T.self, from: JSONEncoder().encode(uuid))
 				}
 				
@@ -413,7 +397,6 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 
 					let recordType = "\(T.self)".lowercased()
 					let sql = "SELECT * FROM \"\(recordType)\" WHERE \(key)=:id;"
-//					print("decoding \(T.self): \(sql), \(stringValue)")
 					return try decoder.decode(T.self, using: sql,
 						arguments: ["id": .text(stringValue)])
 				}
@@ -422,26 +405,16 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 			guard let jsonData = stringValue.data(using: .utf8) else {
 				throw SQLiteDecoder.Error.invalidJSON(stringValue)
 			}
-//			print("\tdecoding as JSON")
-			do {
-				let result = try jsonDecoder.decode(T.self, from: jsonData)
-				return result
-			} catch {
-				print("error in \(#function), key: \(key), expectedType: \(T.self)")
-				print(error)
-				throw error
-			}
+			return try jsonDecoder.decode(T.self, from: jsonData)
 		}
 	}
 	func decode(_ type: Data.Type, forKey key: K) throws -> Data {
-		// print("\(type(of: self)).decode Data for key: \(key)")
 		guard let value = _row[key.stringValue]?.dataValue else {
 			throw SQLiteDecoder.Error.missingValueForKey(key.stringValue)
 		}
 		return value
 	}
 	func decode(_ type: Date.Type, forKey key: K) throws -> Date {
-		// print("\(type(of: self)).decode Date for key: \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let date = PreciseDateFormatter.date(from: string) {
 			return date
@@ -450,7 +423,6 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		}
 	}
 	func decode(_ type: URL.Type, forKey key: K) throws -> URL {
-		// print("\(type(of: self)).decode URL for key: \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let url = URL(string: string) {
 			return url
@@ -459,7 +431,6 @@ private class _KeyedContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
 		}
 	}
 	func decode(_ type: UUID.Type, forKey key: K) throws -> UUID {
-		// print("\(type(of: self)).decode UUID for key: \(key)")
 		let string = try decode(String.self, forKey: key)
 		if let uuid = UUID(uuidString: string) {
 			return uuid
