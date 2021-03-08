@@ -89,7 +89,7 @@ class ObserveTests: XCTestCase {
 
         expectationAndResultsForPeople = (expectation, [updatedPerson, replacedPerson])
 
-        try database.withTransaction {
+        try database.withTransaction { database in 
             try database.write(Person.insert, arguments: replacedPerson.asArguments)
             try database.write(Person.updateTitleWithID, arguments: [
                 "id": .text("2"), "title": .text("Technical Fellow")
@@ -137,7 +137,7 @@ class ObserveTests: XCTestCase {
 
         expectationAndResultsForPeople = (expectation, [insertedPerson, replacedPerson])
 
-        try database.withTransaction {
+        try database.withTransaction { database in
             try database.write(Person.deleteWithID, arguments: ["id": .text("2")])
             try database.write(Person.insert, arguments: insertedPerson.asArguments)
             try database.write(Person.insert, arguments: replacedPerson.asArguments)
@@ -165,7 +165,7 @@ class ObserveTests: XCTestCase {
         expectationAndResultsForPeople = (peopleExpectation, [insertedPerson, replacedPerson])
         expectationAndResultsForPets = (petsExpectation, [insertedPet, replacedPet])
 
-        try database.withTransaction {
+        try database.withTransaction { database in
             try database.write(Person.deleteWithID, arguments: ["id": .text("2")])
             try database.write(Person.insert, arguments: insertedPerson.asArguments)
             try database.write(Person.insert, arguments: replacedPerson.asArguments)
@@ -185,7 +185,7 @@ class ObserveTests: XCTestCase {
 
         expectationAndResultsForPetOwners = (petOwnersExpectation, [_petOwner1])
 
-        try database.withTransaction {
+        try database.withTransaction { database in 
             try database.write(Pet.deleteWithName, arguments: ["name": .text("小飞球")])
         }
 
@@ -203,7 +203,7 @@ class ObserveTests: XCTestCase {
 
         expectationAndResultsForPetOwners = (petOwnersExpectation, [_petOwner1, _petOwner2, petOwner3])
 
-        try database.withTransaction {
+        try database.withTransaction { database in
             try database.write(Person.insert, arguments: insertedPerson.asArguments)
             try database.write(Pet.insert, arguments: insertedPet.asArguments)
         }
@@ -223,7 +223,7 @@ class ObserveTests: XCTestCase {
 
         expectationAndResultsForPetOwners = (petOwnersExpectation, [updatedPetOwner, _petOwner2])
 
-        try database.withTransaction {
+        try database.withTransaction { database in
             try database.write(Pet.updateNameWithRegistrationID, arguments: [
                 "name": .text("February"),
                 "registration_id": .text("1"),
